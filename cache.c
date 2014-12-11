@@ -58,11 +58,7 @@
 #include "machine.h"
 #include "cache.h"
 
-<<<<<<< HEAD
 int PDP_PD = 0;
-=======
-int PDP_PD=15;
->>>>>>> FETCH_HEAD
 /* cache access macros */
 #define CACHE_TAG(cp, addr)	((addr) >> (cp)->tag_shift)
 #define CACHE_SET(cp, addr)	(((addr) >> (cp)->set_shift) & (cp)->set_mask)
@@ -988,16 +984,9 @@ cache_flush_addr(struct cache_t *cp,	/* cache instance to flush */
 
 void compute_pd(struct cache_t *cp){
   int index,i;
-<<<<<<< HEAD
   int pd,f1,f2;
   double  E[PDP_PD_MAX+1],maxE=0;
 
-=======
-  int pd,k,f1=0, f2=0;
-  float  E[PDP_PD_MAX+1],maxE=0;
-  FILE *fp=NULL;
-  static int j=0;
->>>>>>> FETCH_HEAD
   for(index=1;index<=PDP_PD_MAX;index++){
     f1=0;f2=0;
     for(i=1;i<=index;i++){
@@ -1010,22 +999,6 @@ void compute_pd(struct cache_t *cp){
       pd=index;
     }
   }
-  
   PDP_PD=pd;
-<<<<<<< HEAD
   printf("%d ", pd);
-=======
-  if(j)
-  fp = fopen("pdp.csv","a");
-  else
-  fp = fopen("pdp.csv","a");
-  if(fp!=NULL){
-  fprintf(fp,"%d,",PDP_PD);
-  //for(k=1;k<=PDP_PD_MAX;k++)fprintf(fp,"%d,",cp->PDP_Ni[k]);
-  fprintf(fp,"\n");
-  }
-  else
-  printf("Cant open file!\n");
-  fclose(fp);
->>>>>>> FETCH_HEAD
 }
