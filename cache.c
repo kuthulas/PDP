@@ -58,7 +58,7 @@
 #include "machine.h"
 #include "cache.h"
 
-int PDP_PD;
+int PDP_PD = 0;
 /* cache access macros */
 #define CACHE_TAG(cp, addr)	((addr) >> (cp)->tag_shift)
 #define CACHE_SET(cp, addr)	(((addr) >> (cp)->set_shift) & (cp)->set_mask)
@@ -342,7 +342,7 @@ cache_create(char *name,		/* name of the cache */
 
   /* initialize pdp options */
   cp->PDP_Nt = 0;
-  memset(cp->PDP_Ni, 0, PDP_PD_MAX);
+  memset(cp->PDP_Ni, 0, PDP_PD_MAX+1);
 
   /* blow away the last block accessed */
   cp->last_tagset = 0;
@@ -556,7 +556,7 @@ cache_access(struct cache_t *cp,	/* cache to access */
     }
     /* PDP counter update */
     cp->PDP_Nt++;
-    if((cp->PDP_Nt % 10000) == 0) compute_pd(cp);
+    if((cp->PDP_Nt % 50000) == 0) compute_pd(cp);
   }
 
   /* check for a fast hit: access to same block */
@@ -613,7 +613,7 @@ cache_access(struct cache_t *cp,	/* cache to access */
     break;
   case PDP:
   {
-    int bindex, nindex=-1, iindex=0, rindex=0, max_irpd=0, max_rrpd=0;
+    int bindex, nindex=-1, iindex=1, rindex=1, max_irpd=-1, max_rrpd=-1;
     for (bindex=cp->assoc-1, blk=cp->sets[set].way_head;
       blk;
       bindex--, blk=blk->way_next)
@@ -624,7 +624,7 @@ cache_access(struct cache_t *cp,	/* cache to access */
         nindex = bindex;
         break;
       }
-
+      
       /* victim selection if there are no unprotected lines */
       /* replace inserted line with highest rpd, if none found replace reused line with highest rpd */
       if(blk->rpd > max_irpd){
@@ -641,9 +641,12 @@ cache_access(struct cache_t *cp,	/* cache to access */
       }
     }
 
-    if(nindex==-1) nindex = ((max_irpd == 0) ? rindex : iindex);
-
-    repl = CACHE_BINDEX(cp, cp->sets[set].blks, nindex);
+    if(nindex==-1) {
+      nindex = ((max_irpd == -1) ? rindex : iindex);
+      repl = cp->sets[set].way_tail;
+    }
+    else repl = CACHE_BINDEX(cp, cp->sets[set].blks, nindex);
+    update_way_list(&cp->sets[set], repl, Head);
     repl->rpd = PDP_PD - 1; /* PDP distance decrement on block replacement */
     repl->reused = 0;
   }
@@ -661,6 +664,7 @@ cache_access(struct cache_t *cp,	/* cache to access */
   cp->last_blk = NULL;
 
   /* write back replaced block data */
+
   if (repl->status & CACHE_BLK_VALID)
     {
       cp->replacements++;
@@ -690,7 +694,6 @@ cache_access(struct cache_t *cp,	/* cache to access */
   /* update block tags */
   repl->tag = tag;
   repl->status = CACHE_BLK_VALID;	/* dirty bit set on update */
-
   /* read data block */
   lat += cp->blk_access_fn(Read, CACHE_BADDR(cp, addr), cp->bsize,
 			   repl, now+lat);
@@ -736,7 +739,7 @@ cache_access(struct cache_t *cp,	/* cache to access */
     blk->status |= CACHE_BLK_DIRTY;
 
   /* if LRU replacement and this is not the first element of list, reorder */
-  if (blk->way_prev && cp->policy == LRU)
+  if (blk->way_prev && ((cp->policy == LRU) || (cp->policy == PDP)))
     {
       /* move this block to head of the way (MRU) list */
       update_way_list(&cp->sets[set], blk, Head);
@@ -750,7 +753,7 @@ cache_access(struct cache_t *cp,	/* cache to access */
       /* RD sampler and PDP counter updates */
       int rd;
 
-      for (rd=0, fnode=cp->sets[set].fifo_head;
+      for (rd=1, fnode=cp->sets[set].fifo_head;
       fnode;
       rd++, fnode=fnode->next)
       {
@@ -820,7 +823,7 @@ cache_access(struct cache_t *cp,	/* cache to access */
       blk->reused = 1;
 
       /* previously hit block, so distance is zero; skipping fifo update */
-          cp->PDP_Ni[0]++;
+          cp->PDP_Ni[1]++;
     }
 
   /* tag is unchanged, so hash links (if they exist) are still valid */
@@ -981,19 +984,21 @@ cache_flush_addr(struct cache_t *cp,	/* cache instance to flush */
 
 void compute_pd(struct cache_t *cp){
   int index,i;
-  int pd,f1=0, f2=0;
-  float  E[PDP_PD_MAX+1],maxE=0;
+  int pd,f1,f2;
+  double  E[PDP_PD_MAX+1],maxE=0;
 
   for(index=1;index<=PDP_PD_MAX;index++){
+    f1=0;f2=0;
     for(i=1;i<=index;i++){
-      f1+= cp->PDP_Ni[i-1];
-      f2+= i * cp->PDP_Ni[i-1];
+      f1+= cp->PDP_Ni[i];
+      f2+= i * cp->PDP_Ni[i];
     }
-    E[index] = (float)f1/(f2 + (cp->PDP_Nt - f1)*(index + cp->assoc));
-    if(E[index] - maxE > 0.000001){
+    E[index] = (double)f1/(f2 + (cp->PDP_Nt - f1)*(index + cp->assoc));
+    if(E[index] > maxE){
       maxE = E[index]; 
       pd=index;
     }
   }
   PDP_PD=pd;
+  printf("%d ", pd);
 }
