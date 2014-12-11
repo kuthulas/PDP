@@ -4601,6 +4601,15 @@ sim_main(void)
 
       /* finish early? */
       if (max_insts && sim_num_insn >= max_insts)
+      {
+        int i;
+        printf("\n");
+        for (i = 0; i <= 255; i++)
+        {
+          printf("%d,", cache_dl2->PDP_Ni[i]);
+        }
+        printf("\n");
 	return;
+}
     }
 }

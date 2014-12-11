@@ -110,7 +110,7 @@ enum cache_policy {
 #define CACHE_BLK_VALID		0x00000001	/* block in valid, in use */
 #define CACHE_BLK_DIRTY		0x00000002	/* dirty block */
 //int PDP_PD; /* Universal PD for static PDP */
-#define PDP_PD_MAX 128 /* Maximum PD */
+#define PDP_PD_MAX 256 /* Maximum PD */
 
 /* PDP address FIFO node */
 struct pdp_fifo_node

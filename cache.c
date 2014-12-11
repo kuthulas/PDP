@@ -753,14 +753,16 @@ cache_access(struct cache_t *cp,	/* cache to access */
       /* RD sampler and PDP counter updates */
       int rd;
 
-      for (rd=1, fnode=cp->sets[set].fifo_head;
+      for (rd=0, fnode=cp->sets[set].fifo_head;
       fnode;
-      rd++, fnode=fnode->next)
+       fnode=fnode->next)
       {
         if(fnode->address == addr){
+          //printf("%d ", rd);
           cp->PDP_Ni[rd]++;
           break;
         }
+        rd++;
       }
 
       /* Push the address to head of FIFO */
@@ -1000,5 +1002,6 @@ void compute_pd(struct cache_t *cp){
     }
   }
   PDP_PD=pd;
-  printf("%d ", pd);
+  printf("%d,", pd);
+  fflush(stdout);
 }
