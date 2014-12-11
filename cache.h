@@ -174,7 +174,7 @@ struct cache_t
   unsigned int hit_latency;	/* cache hit latency */
 
   /* PDP saturating counters */
-  int PDP_Ni[PDP_PD_MAX+1];
+  int PDP_Ni[PDP_PD_MAX];
   int PDP_Nt;
 
   /* miss/replacement handler, read/write BSIZE bytes starting at BADDR

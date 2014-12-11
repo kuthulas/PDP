@@ -342,7 +342,7 @@ cache_create(char *name,		/* name of the cache */
 
   /* initialize pdp options */
   cp->PDP_Nt = 0;
-  memset(cp->PDP_Ni, 0, PDP_PD_MAX+1);
+  memset(cp->PDP_Ni, 0, PDP_PD_MAX);
 
   /* blow away the last block accessed */
   cp->last_tagset = 0;
@@ -823,7 +823,7 @@ cache_access(struct cache_t *cp,	/* cache to access */
       blk->reused = 1;
 
       /* previously hit block, so distance is zero; skipping fifo update */
-          cp->PDP_Ni[1]++;
+          cp->PDP_Ni[0]++;
     }
 
   /* tag is unchanged, so hash links (if they exist) are still valid */
@@ -987,7 +987,7 @@ void compute_pd(struct cache_t *cp){
   int pd,f1,f2;
   double  E[PDP_PD_MAX+1],maxE=0;
 
-  for(index=1;index<=PDP_PD_MAX;index++){
+  for(index=0;index<=PDP_PD_MAX;index++){
     f1=0;f2=0;
     for(i=1;i<=index;i++){
       f1+= cp->PDP_Ni[i];
