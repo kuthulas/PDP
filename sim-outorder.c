@@ -4601,6 +4601,18 @@ sim_main(void)
 
       /* finish early? */
       if (max_insts && sim_num_insn >= max_insts)
+	{
+  int k;
+  FILE* fp = fopen("rdd.csv","a");
+  if(fp!=NULL){
+  for(k=1;k<=PDP_PD_MAX;k++)fprintf(fp,"%d,",cache_dl1->PDP_Ni[k]);
+  fprintf(fp,"\n");
+  }
+  else
+  printf("Cant open file!\n");
+  fclose(fp);
+
 	return;
+	}
     }
 }
